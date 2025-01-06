@@ -63,6 +63,38 @@ def read_full_input():
     return data, 101, 103
 
 
+def v(grid, leng):
+    count_x = 0
+    for row in grid:
+        line = 0
+        for x in row:
+            if x:
+                line += 1
+            else:
+                if line >= leng:
+                    count_x += 1
+                line = 0
+        if line >= leng:
+            count_x += 1
+            line = 0
+
+    count_y = 0
+    for col in range(len(grid[0])):
+        line = 0
+        for row in grid:
+            if row[col]:
+                line += 1
+            else:
+                if line >= leng:
+                    count_y += 1
+                line = 0
+        if line >= leng:
+            count_y += 1
+            line = 0
+
+    return count_x + count_y, count_x, count_y
+
+
 def main():
     data, size_x, size_y = read_full_input()
     # data, size_x, size_y = read_sample_input()
@@ -99,18 +131,21 @@ def main():
     print(f"Part 1: Result = {result}")
 
     i = 0
+    single_step = False
+    most_lines = 0
     while True:
         grid = [[0 for _ in range(size_x)] for _ in range(size_y)]
         for r in robots:
             pos = r.pos(i)
             grid[pos[1]][pos[0]] += 1
-        tree_grid = []
-        for g in grid:
-            tree_line = ''.join(['.' if item == 0 else str(item) for item in g])
-            tree_grid.append(tree_line)
-        print(i)
-        for line in range(25):
-            print(tree_grid[line])
+        # print(i)
+        lines, x, y = v(grid, 4)
+        if lines > most_lines:
+            single_step = True
+            most_lines = lines
+        print(f"seconds:{i} {lines=}")
+        # for line in range(25):
+        #     print(tree_grid[line])
         # if (is_balanced(tree_grid[10]) and is_balanced(tree_grid[20]) and
         #         is_balanced(tree_grid[30]) and is_balanced(tree_grid[40])):
         #     for tree_line in tree_grid:
@@ -118,21 +153,32 @@ def main():
         # else:
         #     i += 1
         #     continue
-        print()
-        print(i)
-        command = input("Input: ")
-        if command == "b":
-            break
-        if command == "p":
-            i -= 2
-        elif command == 'a':
-            for line in tree_grid:
-                print(line)
-            print()
-            print(i)
-        elif command != '':
-            i = int(command) - 1
+        # print()
+        # print(i)
+        if single_step or check_in(i):
+            command = input("Input: ")
+            if command == "b":
+                break
+            if command == "s":
+                single_step = not single_step
+            elif command == 'a':
+                tree_grid = []
+                for g in grid:
+                    tree_line = ''.join(['.' if item == 0 else str(item) for item in g])
+                    tree_grid.append(tree_line)
+                for line in tree_grid:
+                    print(line)
+                print()
+                print(i)
+                i -= 1
+            elif command != '':
+                if command.isdigit():
+                    i = int(command) - 1
         i += 1
+
+
+def check_in(i):
+    return i % 10_000 == 0
 
 
 def is_balanced(s):

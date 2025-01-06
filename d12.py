@@ -7,11 +7,12 @@ from d12_region import (
     UP,
     DOWN,
     NUM_DIRECTIONS,
+    corners,
     directions,
     opposite_compass,
     all_neighbors,
     Region,
-    Regions
+    Regions,
 )
 
 
@@ -31,9 +32,9 @@ added = {}
 
 
 def main():
-    # data = read_input("input12.txt")
+    data = read_input("input12.txt")
     # data = read_input("input12_sample.txt")
-    data = read_input("input12_diagonal.txt")
+    # data = read_input("input12_diagonal.txt")
     # data = read_input("input12_small.txt")
     for d in data:
         print(d)
@@ -43,14 +44,17 @@ def main():
               regs.add_plot(data, r, c)
     print(f"Part 1: Total fence cost = {regs.fence_cost()}")
 
-    line_count = 0
+    corner_count = 0
     price = 0
     for reg in regs.regs:
-        count = lines(reg.plots, 0, 0, reg.plant)
-        print(f"Lines for {reg.plant} = {count}")
-        line_count += count
-        price += count * reg.area()
-    print(f"Part 2: {line_count = } {price = }")
+        sides = reg.sides()
+        corner_count += sides
+        area = reg.area()
+        p = sides * area
+        print(f"Region {reg.plant}  {sides=}  {area=}  {p=}")
+        price += p
+    print(f"Part 2: {corner_count = } {price = }")
+    # Correct price is 851994
 
 
 def is_land_locked(plots, r, c):
@@ -145,6 +149,11 @@ def lines(plots, r, c, plant):
     return line_count
 
 
+def corner_pairs(r, c):
+    for (ar, ac), (br, bc) in itertools.pairwise(directions + [directions[0]]):
+        yield (r + ar, c + ac), (r + br, c + bc)
+
+
 if __name__ == "__main__":
     main()
     print(f"Day 12")
@@ -152,12 +161,22 @@ if __name__ == "__main__":
     print(f"Part 1: Answer: 1400386")
 
 
-def test_region__disconnected_rc__is_touching_returns_false():
-    data = read_input("input12_sample.txt")
-    reg = Region(data, 1, 3)
-    r, c = 2, 4  # Diagonal: not touching.
-    expected = False
-    assert expected == reg.is_touching(r, c)
+def test_corners__inside_and_outside_corners_counted():
+    plots = {
+        (0,0): True,
+        (0,1): True,
+        (1,1): True,
+    }
+    expect = 6
+    result = corners(plots)
+    assert expect == result
+
+
+def test_corner_pairs__generates_4_sets():
+    count = 0
+    for a, b in corner_pairs(0, 0):
+        count += 1
+    assert count == 4
 
 
 def test_region__connected_rc__is_touching_returns_true():

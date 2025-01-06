@@ -13,6 +13,45 @@ def all_neighbors(r, c):
         yield r + dr, c + dc
 
 
+CORNERS = {
+    # CCW, DIAG, CW
+    (False, False, False),  # Plot is on the inside of a corner.
+    (False, True, False),  # Plot is on the inside of a corner.
+    (True, False, True)  # Plot is on the outside of a corner.
+}
+
+corner_directions = [
+    # Dir, then diag clockwise, then again clockwise.
+    ((-1, 0), (-1, 1), (0, 1)),  # Up, Up Right, Right
+    ((0, 1), (1, 1), (1, 0)),  # Right, Down Right, Down
+    ((1, 0), (1, -1), (0, -1)),  # Down, Down Left, Left
+    ((0, -1), (-1, -1), (-1, 0))  # Left, Up Left, Up
+]
+
+
+def corner_neighbors(r, c, offsets):
+    # Offsets must be in Dir, Diag CW, CW order
+    aa, bb, cc = offsets
+    return (r + aa[0], c + aa[1]), (r + bb[0], c + bb[1]), (r + cc[0], c + cc[1])
+
+
+def in_plots(plots, neighbors):
+    # neighbors must be in Dir, Diag CW, CW order
+    return neighbors[0] in plots, neighbors[1] in plots, neighbors[2] in plots
+
+
+def corners(plots):
+    count = 0
+    for r, c in plots.keys():
+        for dir_offsets in corner_directions:
+            neighbors = corner_neighbors(r, c, dir_offsets)
+            goober = in_plots(plots, neighbors)
+
+            if goober in CORNERS:
+                count += 1
+    return count
+
+
 class Region:
     def __init__(self, data, r, c):
         self.plant = data[r][c]
@@ -21,6 +60,7 @@ class Region:
         self.corners = {}
         # self.add(r, c)
         self.slurp(data, r, c)
+        print(f"{self.plots=}")
 
     def __repr__(self):
         return f"Plant {self.plant}, {self.plots.keys()}"
@@ -46,16 +86,19 @@ class Region:
                     continue
                 if data[rr][cc] == self.plant:
                     if not (rr, cc) in self.plots:
-                        check.append((rr,cc))
+                        check.append((rr, cc))
                         # self.add(rr, cc)
                         # print(f"slurping {rr},{cc}")
 
     def is_touching(self, r, c):
+        """Return True if r,c is touching any square in self.plots."""
+        print(f"{r=} {c=}")
         for dr, dc in directions:
             rr = r + dr
             cc = c + dc
-            # print(rr, cc)
+            print(f"{rr=}, {cc=}")
             if (rr, cc) in self.plots:
+                print(f"-------> {rr=}, {cc=}")
                 return True
         return False
 
@@ -145,6 +188,9 @@ class Region:
         print(f"corners {self.corners}")
         # self.perimeter = border
         return border
+
+    def sides(self):
+        return corners(self.plots)
 
 
 class Regions:
