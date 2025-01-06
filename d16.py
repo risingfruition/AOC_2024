@@ -46,6 +46,7 @@ facing_text = {
     LEFT: "LEFT"
 }
 
+
 class Node:
     def __init__(self, cost: int, est: int, r: int, c: int, facing: int, parent):
         self.cost = cost
@@ -154,7 +155,7 @@ def neighbors(data, r, c, facing):
                 yield nr, nc, new_facing
 
 
-def solve(best, data: list[list[int]], r: int, c: int, facing: int, er: int, ec: int):
+def solve_1(best, data: list[list[int]], r: int, c: int, facing: int, er: int, ec: int):
     closed = []
     open: PriorityQueue = PriorityQueue()
     cost = 0
@@ -224,7 +225,99 @@ def solve(best, data: list[list[int]], r: int, c: int, facing: int, er: int, ec:
     print("Path:")
     print(path)
 
-def main():
+
+def add_tiles(path, node):
+    while node:
+        path.add((node.r, node.c))
+        node = node.parent
+
+
+def solve_2(best, data: list[list[int]], r: int, c: int, facing: int, er: int, ec: int):
+    path = set()
+    closed = []
+    open: PriorityQueue = PriorityQueue()
+    cost = 0
+    est = heuristic(r, c, facing, er, ec)
+    parent = None
+    node = Node(cost, est, r, c, facing, parent)
+    open.put(node)
+    best_node = None
+    while not open.empty():
+        node = open.get()
+        closed.append(node)
+        if node.r == er and node.c == ec:
+            if not best_node:
+                path = set()
+                best_node = node
+                print(f"First best_node cost={node.cost}")
+                add_tiles(path, node)
+            elif best_node.cost > node.cost:
+                path = set()
+                print(f"New best_node cost={node.cost} < {best_node.cost}")
+                best_node = node
+                add_tiles(path, node)
+            elif best_node.cost == node.cost:
+                add_tiles(path, node)
+            else:
+                pass  # No new best node
+
+        # print(f"Node cost={node.cost} est={node.est}  r={node.r}  c={node.c}  f={facing_text[node.facing]}")
+        for nr, nc, nf in neighbors(data, node.r, node.c, node.facing):
+            cost = node.cost
+            if nf != node.facing:
+                cost += TURN_CHARGE
+            else:
+                cost = node.cost + 1  # ALSO NEED THIS IF NR NC NOT EQUAL NODE R OR C
+            est = heuristic(nr, nc, nf, er, ec)
+            location = (nr, nc, nf)
+            prev = best.get(location, too_costly)
+            curr = cost + est
+            # print(f"     {cost=} {est=} {nr=} {nc=} nf={facing_text[nf]} {prev=} {curr=}")
+            if prev == too_costly:
+                # this is the first time adding this node.
+                # print(f"       Add first time.")
+                best[location] = curr
+                open.put(Node(cost, est, nr, nc, nf, node))
+            elif prev > curr:
+                # Current node is better than any previous one at this location.
+                # print(f"       Add better node.")
+                best[location] = curr
+                open.put(Node(cost, est, nr, nc, nf, node))
+            elif prev == curr:
+                # Keep the ones that are equal for part 2.
+                open.put(Node(cost, est, nr, nc, nf, node))
+            else:
+                # prev is still the best value.
+                # Therefore: do not put this neighbor on the open list.
+                # print(f"  ----")
+                pass
+    print(f"Part 2 Number of tiles on best path = {len(path)}")
+
+
+def part_1():
+    # data = read_input("input16.txt")
+    data = read_input("input16_sample.txt")
+    print(data)
+    data = convert(data)
+    print(data)
+    fill_dead(data)
+    print_data(data)
+    sr, sc = find_stuff(data, START)
+    er, ec = find_stuff(data, END)
+    data[er][ec] = EMPTY
+    data[sr][sc] = EMPTY
+    facing: int = RIGHT
+    best = {(sr, sc, facing): 0}
+    solve_1(best, data, sr, sc, facing, er, ec)
+    small = 9999999999999
+    for facing in range(NUM_DIRECTIONS):
+        stuff = best.get((er, ec, facing), -1)
+        if 0 < stuff < small:
+            small = stuff
+    print(f"Part 1 Best cost is {small}")  # 85420
+
+
+def part_2():
     data = read_input("input16.txt")
     # data = read_input("input16_sample.txt")
     print(data)
@@ -238,13 +331,12 @@ def main():
     data[sr][sc] = EMPTY
     facing: int = RIGHT
     best = {(sr, sc, facing): 0}
-    solve(best, data, sr, sc, facing, er, ec)
-    small = 9999999999999
-    for facing in range(NUM_DIRECTIONS):
-        stuff = best.get((er, ec, facing), -1)
-        if 0 < stuff < small:
-            small = stuff
-    print(f"Part 1 Best cost is {small}")  # 85420
+    solve_2(best, data, sr, sc, facing, er, ec)
+
+
+def main():
+    # part_1()  # 85420
+    part_2()  # 492
 
 
 if __name__ == "__main__":
