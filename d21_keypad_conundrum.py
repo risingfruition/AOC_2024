@@ -53,17 +53,17 @@ numpad = {
 # 638A
     'A6': '^^A',
     'A7': '^^^<<A',
-    'A8': '^^^<A',
+    'A8': '<^^^A',
     '78': '>A',
     '84': '<vA',
     '46': '>>A',
     '96': 'vA',
     '65': '<A',
-    '5A': '>vvA',
-    '38': '^^<A',
-    '86': '>vA',
+    '5A': 'vv>A',
+    '38': '<^^A',
+    '86': 'v>A',
     '63': 'vA',
-    '8A': '>vvvA',
+    '8A': 'vvv>A',
     # '': '',
 }
 
@@ -72,11 +72,11 @@ numpad = {
 dir_pad = {
     'A^': '<A',
     'A<': 'v<<A',
-    'Av': 'v<A',
+    'Av': '<vA',
     'A>': 'vA',
     '^A': '>A',
     '<A': '>>^A',
-    'vA': '>^A',
+    'vA': '^>A',
     '>A': '^A',
     '^<': 'v<A',
     '^v': 'vA',
@@ -230,9 +230,9 @@ def bfs(data, s, e):
     return best
 
 
-def part1_old():
-    data = read_input("input21.txt")
-    # data = read_input("input21_sample.txt")
+def part1_b():
+    # data = read_input("input21.txt")
+    data = read_input("input21_sample.txt")
     print(data)
     total = 0
     for code in data:
@@ -277,6 +277,44 @@ def part1_old():
     print()
 
 
+@cache
+def dfs(st, level) -> int:
+    if level == 0:
+        return len(st)
+    n = 0
+    for s in itertools.pairwise('A' + st):
+        n += dfs(dir_pad[''.join(s)], level - 1)
+    return n
+
+
+def part2():
+    data = read_input("input21.txt")
+    # data = read_input("input21_sample.txt")
+    print(data)
+    total = 0
+    for code in data:
+        control_door_bot = ''
+        print(f"{code = }")
+        prev = 'A'  # Robot initially points to the 'A' button.
+        for ch in code:
+            move = prev + ch
+            # print(f"{move = }")
+            control_door_bot += numpad[move]
+            prev = ch
+        print(f"  len(door_bot) = {len(control_door_bot)}  {control_door_bot = }")
+
+        count = dfs(control_door_bot, 25)
+        print(f"len {count}")
+
+        int_code = int(code[:3])
+        total += count * int_code
+        print(f"   Leng of string {count}")
+        print(f"   Numeric part = {int_code}")
+        print(f"   Total = {total}")
+    print(f"Part 2 total = {total}")
+
+
+@cache
 def make_dir_pad(control_door_bot):
     dir_pad_bot = ''
     prev = 'A'
@@ -422,15 +460,14 @@ def part1():
 
         total += len(pad_cold_robot[0]) * int(door_code[:3])
 
-
     print(f"------------------------------------------------------")
     print(f"Part 1 total = {total}")
 
 
 def main():
-    # Part 1 sample has 44 cheats that save time.
-    part1()
-    # part2()
+    # part1()
+    part1_b()  # Sample value is 126384  # Correct value is 246990
+    part2()
 
 
 if __name__ == "__main__":
