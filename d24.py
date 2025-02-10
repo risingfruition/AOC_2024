@@ -36,32 +36,39 @@ def part1():
     # starts, gates = read_input("input24_tiny.txt")
     print(f"{starts = }")
     print()
-    gates = deque(gates)
-    print(f"{gates = }")
     values = {s[0]: int(s[1]) for s in starts}
     print(f"{values = }")
+    output = add_xy(gates, values)
+    print(f"Part 1 output: {output}")
+
+
+def add_xy(gates: list[list[str]], values: dict[str, int]) -> int:
+    # TODO: copy values so that when I change it below, the originals
+    # are unchanged.
+    gates = deque(gates)
     done_gates = []
     while gates:
         g = gates.popleft()
         if g[0] in values and g[2] in values:
             values[g[4]] = gen(values, g)
-            print(f" {g = }  {values[g[4]]}")
             done_gates.append(g)
         else:
             gates.append(g)
-        print(f"  {gates = }")
-    print("Wires")
-    print(values)
+    output: int = wires_to_num(values)
+    return output
+
+
+def wires_to_num(values: dict[str, int]) -> int:
     zs = []
     for k in values.keys():
         if 0 == k.find('z'):
             zs.append(k)
     zs = sorted(zs, reverse=True)
-    output = 0
+    output: int = 0
     for z in zs:
         output *= 2
         output += values[z]
-    print(f"Part 1 output: {output}")
+    return output
 
 
 def get_value(values, ch):
@@ -100,12 +107,6 @@ def chug(start_gates, values, zs):
     return True
 
 
-def iter_four(lyst):
-    yield [lyst[0],lyst[1]], [lyst[2],lyst[3]]
-    yield [lyst[0],lyst[2]], [lyst[1],lyst[3]]
-    yield [lyst[0],lyst[3]], [lyst[1],lyst[2]]
-
-
 def swap_wires(pairs):
     # Swap the wires
     for p1, p2 in itertools.batched(pairs, 2):
@@ -114,6 +115,7 @@ def swap_wires(pairs):
         p2[4] = temp
 
 
+# Need something like this, but to set x and y wires
 def get_zs(val):
     bits = []
     while val > 0:
@@ -132,7 +134,8 @@ def get_zs(val):
 
 
 def part2():
-    start_values, start_gates = read_input("input24_sample.txt")
+    start_values, start_gates = read_input("input24.txt")
+    # start_values, start_gates = read_input("input24_sample.txt")
     print(f"{start_values = }")
     print()
     gates = deque(start_gates)
@@ -142,39 +145,80 @@ def part2():
     y_val = get_value(start_values, 'y')
     z_val = x_val + y_val
     zs = get_zs(z_val)
+    print()
+    wire_to_gates = {'None': 'No gate'}
+    unsorted_wires = set()
+    input_wires_gates = {
+        'None': ['No gate'],
+        'z19': ['swapped'],
+        'z00': ['special case for bit 0'],
+        'z01': ['special case for bit 0']
+    }
+    output_wires_gates = {'None': ['No gate']}
+    for g in gates:
+        w = g[0]
+        wire_to_gates[w] = wire_to_gates.get(w, []) + [g]
+        unsorted_wires.add(w)
+        input_wires_gates[w] = input_wires_gates.get(w, []) + [g]
 
-    c_8s = 0
-    for pairs in itertools.combinations(start_gates, 8):
-        c_8s += 1
-        if c_8s % 100_000 == 0:
-            print(f"Tried={c_8s}")
-        names = []
-        for p in pairs:
-            names.append(p[4])
-        values = {}
-        for k, v in start_values.items():
-            values[k] = v
+        w = g[2]
+        wire_to_gates[w] = wire_to_gates.get(w, []) + [g]
+        unsorted_wires.add(w)
+        input_wires_gates[w] = input_wires_gates.get(w, []) + [g]
 
-        swap_wires(pairs)
+        w = g[4]
+        wire_to_gates[w] = wire_to_gates.get(w, []) + [g]
+        unsorted_wires.add(w)
+        output_wires_gates[w] = output_wires_gates.get(w, []) + [g]
+        print(f"Wire:{w}  Gate:{g}")
 
-        success = chug(gates, values, zs)
-        swap_wires(pairs)
-        # if not success:
-        #     continue
-        output = get_value(values, 'z')
-        # print(f"{x_val =}  {y_val=}  {output = }")
-        # print(output)
-        # print(x_val + y_val)
-        if x_val + y_val == output:
-            print('YAYYYYY!')
-            print(f"Sorted names: {','.join(sorted(names))}")
-            break
+    sorted_wires = sorted(list(unsorted_wires))
+    # print(sorted_wires)
+    # print(wire_to_gates)
+    # print()
+    # print(f"{input_wires_gates = }")
+    #
+    # print()
+    # for w in sorted_wires:
+    #     print(w)
+    #     print(f"  {wire_to_gates[w]}")
 
+    print()
+    for n in range(46):
+        print()
+        nn = f"{n:02d}"
+        z = 'z' + nn
+        y = 'y' + nn
+        x = 'x' + nn
+        a, b, c = find_xy(wire_to_gates, x, y, 'AND')
+        and_g = input_wires_gates[c]
+        and_g_2 = []
+        for g in and_g:
+            and_g_2.append(input_wires_gates.get(g[4], "Not found"))
+        print(f"{x} AND {y} --> {c}  {and_g}  {and_g_2}")
+        a, b, c = find_xy(wire_to_gates, x, y, 'XOR')
+        xor_g = input_wires_gates[c]
+        xor_g_2 = []
+        for g in xor_g:
+            xor_g_2.append(input_wires_gates.get(g[4], "Not found"))
+        print(f"{x} XOR {y} --> {c}  {xor_g}  {xor_g_2}")
+    # print(f"{output_wires_gates = }")
     print(f"Part 2 Done")
 
 
+def find_xy(wire_to_gates, x, y, cond):
+    gates = wire_to_gates.get(x, None)
+    if not gates:
+        return 'None', 'None', 'None'
+    for g in wire_to_gates[x]:
+        if (g[0] == x and g[2] == y) or (g[2] == x and g[0] == y):
+            if g[1] == cond:
+                return g[0], g[2], g[4]
+    return 'None', 'None', 'None'
+
+
 def main():
-    # part1()
+    part1()  # Answer is 64755511006320
     part2()
 
 
